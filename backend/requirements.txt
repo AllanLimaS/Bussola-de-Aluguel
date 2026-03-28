@@ -1,0 +1,7 @@
+playwright
+playwright-stealth
+fastapi
+uvicorn
+sqlalchemy
+geopy
+questionary

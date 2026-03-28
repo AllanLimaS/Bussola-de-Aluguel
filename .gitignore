@@ -1,0 +1,48 @@
+# Arquivos de configurações locais
+.env
+.env.*
+!.env.example
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Ambientes Virtuais Python
+venv/
+.venv/
+env/
+.env/
+
+# Scrapers / Relatórios do Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.playwright-cli/
+
+# Banco de dados
+*.sqlite3
+*.sqlite
+*.db
+
+# Editores e SO
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Agente AI / Skills
+skills-lock.json
