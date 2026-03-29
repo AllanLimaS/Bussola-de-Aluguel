@@ -31,10 +31,11 @@ blob-report/
 playwright/.cache/
 .playwright-cli/
 
-# Banco de dados
+# Banco de dados e dados locais
 *.sqlite3
 *.sqlite
 *.db
+backend/data/
 
 # Editores e SO
 .vscode/

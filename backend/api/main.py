@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from typing import List
-
+from typing import List, Optional
+from pydantic import BaseModel
+import datetime
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,11 +16,14 @@ app = FastAPI(title="Bússola de Aluguel API")
 # Configuração de CORS para permitir que o React acesse a API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Em produção, especifique a URL do seu frontend
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Servir fotos estáticas do disco
+app.mount("/fotos", StaticFiles(directory=db_config.PHOTOS_DIR), name="fotos")
 
 # Dependência para obter a sessão do banco de dados
 def get_db():
@@ -28,13 +33,24 @@ def get_db():
     finally:
         db.close()
 
+class InteracaoRequest(BaseModel):
+    tipo: str  # "like", "neutral", "dislike"
+
 @app.get("/")
 def read_root():
     return {"message": "API Bússola de Aluguel está rodando!"}
 
 @app.get("/imoveis")
-def list_imoveis(db: Session = Depends(get_db)):
-    imoveis = db.query(db_config.Imovel).all()
+def list_imoveis(
+    status: Optional[str] = Query("ativo", description="Filtrar por status: ativo, inativo, removido, todos"),
+    db: Session = Depends(get_db)
+):
+    query = db.query(db_config.Imovel)
+    
+    if status and status != "todos":
+        query = query.filter(db_config.Imovel.status == status)
+    
+    imoveis = query.all()
     
     # Vamos retornar um JSON simplificado com o preço mais recente
     results = []
@@ -44,6 +60,11 @@ def list_imoveis(db: Session = Depends(get_db)):
             .filter(db_config.HistoricoPreco.imovel_id == imovel.id)\
             .order_by(db_config.HistoricoPreco.data_coleta.desc())\
             .first()
+        
+        # Primeira foto como URL
+        foto_principal = None
+        if imovel.fotos:
+            foto_principal = f"/fotos/{imovel.fotos[0].foto_path}"
         
         results.append({
             "id": imovel.id,
@@ -58,8 +79,10 @@ def list_imoveis(db: Session = Depends(get_db)):
             "preco_condominio": ultimo_preco.preco_condominio if ultimo_preco else None,
             "latitude": imovel.latitude,
             "longitude": imovel.longitude,
+            "status": imovel.status,
+            "interacao": imovel.interacao.tipo if imovel.interacao else "neutral",
             "quantidade_fotos": len(imovel.fotos),
-            "foto_principal": imovel.fotos[0].foto_base64 if imovel.fotos else None
+            "foto_principal": foto_principal
         })
     return results
 
@@ -74,7 +97,7 @@ def get_imovel_detail(imovel_id: int, db: Session = Depends(get_db)):
         .order_by(db_config.HistoricoPreco.data_coleta.asc())\
         .all()
     
-    # Retorna o imóvel com fotos e histórico completo
+    # Retorna o imóvel com fotos como URLs e histórico completo
     return {
         "id": imovel.id,
         "titulo": imovel.titulo,
@@ -87,6 +110,7 @@ def get_imovel_detail(imovel_id: int, db: Session = Depends(get_db)):
         "vagas": imovel.vagas,
         "latitude": imovel.latitude,
         "longitude": imovel.longitude,
+        "status": imovel.status,
         "historico_precos": [
             {
                 "aluguel": h.preco_aluguel,
@@ -94,9 +118,35 @@ def get_imovel_detail(imovel_id: int, db: Session = Depends(get_db)):
                 "data": h.data_coleta
             } for h in historico
         ],
-        "fotos": [f.foto_base64 for f in imovel.fotos]
+        "interacao": imovel.interacao.tipo if imovel.interacao else "neutral",
+        "fotos": [f"/fotos/{f.foto_path}" for f in imovel.fotos]
     }
+
+@app.post("/imoveis/{imovel_id}/interagir")
+def interagir_imovel(imovel_id: int, request: InteracaoRequest, db: Session = Depends(get_db)):
+    print(f"Recebendo interacao: {request.tipo} para imovel_id: {imovel_id}")
+    if request.tipo not in ["like", "neutral", "dislike"]:
+        raise HTTPException(status_code=400, detail="Tipo de interação inválido")
+    
+    # Verificar se o imovel existe
+    imovel = db.query(db_config.Imovel).filter(db_config.Imovel.id == imovel_id).first()
+    if not imovel:
+        print(f"Erro: Imovel {imovel_id} nao encontrado para interacao")
+        raise HTTPException(status_code=404, detail="Imóvel não encontrado")
+    
+    interacao = db.query(db_config.InteracaoImovel).filter(db_config.InteracaoImovel.imovel_id == imovel_id).first()
+    
+    if interacao:
+        interacao.tipo = request.tipo
+    else:
+        interacao = db_config.InteracaoImovel(imovel_id=imovel_id, tipo=request.tipo)
+        db.add(interacao)
+    
+    db.commit()
+    print(f"Sucesso: Interacao salva para imovel {imovel_id}")
+    return {"status": "success", "tipo": request.tipo}
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

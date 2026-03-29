@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { ChevronDown, ChevronUp, Filter, Home, MapPin, DollarSign, Bed, Bath, Car, X, Calendar, TrendingUp, Search, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, Filter, Home, MapPin, DollarSign, Bed, Bath, Car, X, Calendar, TrendingUp, Search, ExternalLink, ChevronLeft, ChevronRight, Maximize2, Heart, Circle, EyeOff } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Corrigir ícones do Leaflet
@@ -48,7 +48,9 @@ function App() {
     banheiros: '',
     vagas: '',
     bairro: '',
-    ordenacao: ''
+    ordenacao: '',
+    mostrarApenasFavoritos: false,
+    ocultarDescartados: true
   });
 
   useEffect(() => {
@@ -74,8 +76,11 @@ function App() {
       const matchBanheiros = !filters.banheiros || imovel.banheiros >= parseInt(filters.banheiros);
       const matchVagas = !filters.vagas || imovel.vagas >= parseInt(filters.vagas);
       const matchBairro = !filters.bairro || imovel.endereco.toLowerCase().includes(filters.bairro.toLowerCase());
+      
+      const matchFavoritos = !filters.mostrarApenasFavoritos || imovel.interacao === 'like';
+      const matchDescartados = !filters.ocultarDescartados || imovel.interacao !== 'dislike';
 
-      return matchPrecoMin && matchPrecoMax && matchQuartos && matchBanheiros && matchVagas && matchBairro;
+      return matchPrecoMin && matchPrecoMax && matchQuartos && matchBanheiros && matchVagas && matchBairro && matchFavoritos && matchDescartados;
     });
 
     if (filters.ordenacao === 'menor_preco') {
@@ -88,8 +93,20 @@ function App() {
   }, [imoveis, filters]);
 
   const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFilters(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleInteragir = (e, imovelId, tipo) => {
+    e.stopPropagation();
+    axios.post(`http://localhost:8000/imoveis/${imovelId}/interagir`, { tipo })
+      .then(() => {
+        setImoveis(prev => prev.map(im => im.id === imovelId ? { ...im, interacao: tipo } : im));
+        if (selectedImovel && selectedImovel.id === imovelId) {
+          setSelectedImovel(prev => ({ ...prev, interacao: tipo }));
+        }
+      })
+      .catch(error => console.error("Erro ao interagir:", error));
   };
 
   const handleOpenDetail = (id) => {
@@ -211,11 +228,33 @@ function App() {
                 />
               </div>
             </div>
+            <div className="mt-4 pt-4 border-t border-slate-800 space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" name="mostrarApenasFavoritos" 
+                  checked={filters.mostrarApenasFavoritos} onChange={handleFilterChange}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-500 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Ver apenas favoritos</span>
+                <Heart size={14} className={filters.mostrarApenasFavoritos ? 'text-pink-500' : 'text-slate-600'} fill={filters.mostrarApenasFavoritos ? 'currentColor' : 'none'} />
+              </label>
+              
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" name="ocultarDescartados" 
+                  checked={filters.ocultarDescartados} onChange={handleFilterChange}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-500 focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Ocultar descartados</span>
+                <EyeOff size={14} className={filters.ocultarDescartados ? 'text-indigo-400' : 'text-slate-600'} />
+              </label>
+            </div>
+
             <button 
-              onClick={() => setFilters({ precoMin: '', precoMax: '', quartos: '', banheiros: '', vagas: '', bairro: '', ordenacao: '' })}
-              className="w-full mt-3 text-xs text-indigo-400 hover:text-indigo-300 text-center py-1 font-medium"
+              onClick={() => setFilters({ precoMin: '', precoMax: '', quartos: '', banheiros: '', vagas: '', bairro: '', ordenacao: '', mostrarApenasFavoritos: false, ocultarDescartados: true })}
+              className="w-full mt-4 text-xs text-indigo-400 hover:text-indigo-300 text-center py-2 font-medium bg-indigo-500/5 rounded-lg hover:bg-indigo-500/10 transition-colors"
             >
-              Limpar Filtros
+              Limpar Todos os Filtros
             </button>
           </div>
         </header>
@@ -241,8 +280,25 @@ function App() {
                     : hoveredImovelId === imovel.id 
                       ? 'border-indigo-400 bg-slate-800' 
                       : 'border-slate-800 hover:border-slate-700 bg-slate-800/50'
-                }`}
+                } ${imovel.interacao === 'like' ? 'border-pink-500/30 bg-pink-500/5' : ''}`}
               >
+                {/* Botões de Interação Rápida */}
+                <div className="absolute top-2 right-2 flex gap-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={(e) => handleInteragir(e, imovel.id, imovel.interacao === 'like' ? 'neutral' : 'like')}
+                    className={`p-1.5 rounded-full transition-all ${imovel.interacao === 'like' ? 'bg-pink-500 text-white' : 'bg-slate-700/80 text-slate-300 hover:bg-pink-500 hover:text-white'}`}
+                    title="Favoritar"
+                  >
+                    <Heart size={14} fill={imovel.interacao === 'like' ? 'currentColor' : 'none'} />
+                  </button>
+                  <button 
+                    onClick={(e) => handleInteragir(e, imovel.id, imovel.interacao === 'dislike' ? 'neutral' : 'dislike')}
+                    className={`p-1.5 rounded-full transition-all ${imovel.interacao === 'dislike' ? 'bg-indigo-600 text-white' : 'bg-slate-700/80 text-slate-300 hover:bg-indigo-600 hover:text-white'}`}
+                    title="Descartar"
+                  >
+                    <EyeOff size={14} />
+                  </button>
+                </div>
                 {activeCardId === imovel.id && (
                   <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-10 bg-indigo-500 rounded-full shadow-[0_0_10px_#6366f1]" />
                 )}
@@ -251,7 +307,7 @@ function App() {
                 <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 relative">
                   {imovel.foto_principal ? (
                     <img 
-                      src={imovel.foto_principal.startsWith('data:image') ? imovel.foto_principal : `data:image/png;base64,${imovel.foto_principal}`} 
+                      src={`http://localhost:8000${imovel.foto_principal}`} 
                       alt="Thumbnail" 
                       className="w-full h-full object-cover"
                     />
@@ -291,6 +347,12 @@ function App() {
                         <Car size={14} className="text-slate-500" />
                         <span>{imovel.vagas}</span>
                       </div>
+                      {imovel.metragem && (
+                        <div className="flex items-center gap-1">
+                          <Maximize2 size={14} className="text-slate-500" />
+                          <span>{imovel.metragem}m²</span>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="text-indigo-400 font-bold text-lg block leading-none">R$ {((imovel.preco_aluguel || 0) + (imovel.preco_condominio || 0)).toLocaleString()}</span>
@@ -367,7 +429,7 @@ function App() {
                 {selectedImovel.fotos && selectedImovel.fotos.length > 0 ? (
                   <>
                     <img 
-                      src={selectedImovel.fotos[currentPhotoIndex].startsWith('data:image') ? selectedImovel.fotos[currentPhotoIndex] : `data:image/png;base64,${selectedImovel.fotos[currentPhotoIndex]}`} 
+                      src={`http://localhost:8000${selectedImovel.fotos[currentPhotoIndex]}`} 
                       alt={`Foto ${currentPhotoIndex + 1}`} 
                       className="w-full h-full object-cover transition-opacity duration-300"
                     />
@@ -430,7 +492,7 @@ function App() {
                       <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Vagas</div>
                     </div>
                     <div className="bg-slate-800/40 p-5 rounded-2xl text-center border border-slate-800 hover:border-slate-700 transition-colors">
-                      <Home className="mx-auto text-indigo-400 mb-2" size={28} />
+                      <Maximize2 className="mx-auto text-indigo-400 mb-2" size={28} />
                       <div className="text-xl font-black">{selectedImovel.metragem}</div>
                       <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Metros²</div>
                     </div>
