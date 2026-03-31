@@ -22,6 +22,8 @@ function App() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showMatchInfo, setShowMatchInfo] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [novidades, setNovidades] = useState([]);
+  const [showNovidades, setShowNovidades] = useState(false);
 
   const cardsRef = useRef({});
 
@@ -57,8 +59,17 @@ function App() {
       });
   };
 
+  const fetchNovidades = () => {
+    axios.get(`${API_BASE_URL}/novidades`)
+      .then(response => {
+        setNovidades(response.data);
+      })
+      .catch(error => console.error("Erro ao carregar novidades:", error));
+  };
+
   useEffect(() => {
     fetchImoveis();
+    fetchNovidades();
   }, []);
 
   const handleRecalculate = () => {
@@ -109,6 +120,22 @@ function App() {
         }
       })
       .catch(error => console.error("Erro ao interagir:", error));
+  };
+
+  const handleMarcarNovidadeVisto = (novidadeId) => {
+    axios.post(`${API_BASE_URL}/novidades/${novidadeId}/visto`)
+      .then(() => {
+        setNovidades(prev => prev.filter(n => n.id !== novidadeId));
+      })
+      .catch(error => console.error("Erro ao marcar novidade como vista:", error));
+  };
+
+  const handleLimparNovidades = () => {
+    axios.post(`${API_BASE_URL}/novidades/limpar`)
+      .then(() => {
+        setNovidades([]);
+      })
+      .catch(error => console.error("Erro ao limpar novidades:", error));
   };
 
   const handleOpenDetail = (id) => {
@@ -171,6 +198,11 @@ function App() {
         cardsRef={cardsRef}
         onRecalculate={handleRecalculate}
         onOpenMatchInfo={() => setShowMatchInfo(true)}
+        novidades={novidades}
+        showNovidades={showNovidades}
+        setShowNovidades={setShowNovidades}
+        onMarcarNovidadeVisto={handleMarcarNovidadeVisto}
+        onLimparNovidades={handleLimparNovidades}
       />
       </div>
 

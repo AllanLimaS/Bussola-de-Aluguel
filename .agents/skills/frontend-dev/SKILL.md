@@ -30,7 +30,7 @@ frontend/
 │   ├── index.css       # Tailwind + Leaflet CSS + global overrides
 │   ├── App.jsx         # Componente principal (Orquestração e Estado)
 │   └── components/
-│       ├── Sidebar/    # Sidebar, FilterPanel, PropertyCard, MatchInfoModal
+│       ├── Sidebar/    # Sidebar, FilterPanel, PropertyCard, MatchInfoModal, NovidadesPanel
 │       ├── Map/        # MainMap, CustomMarkers
 │       ├── Modal/      # PropertyDetailModal, AttributeGrid
 │       └── UI/         # LoadingOverlay, Badges
@@ -71,6 +71,9 @@ frontend/
   - `GET /imoveis` → property list (default `status=ativo`). Includes `foto_principal` as URL and `interacao` field.
   - `GET /imoveis/{id}` → full details (fotos[] as URLs, historico_precos[], interacao).
   - `POST /imoveis/{id}/interacao` → set like/dislike/neutral: `{"tipo": "like"}`.
+  - `GET /novidades` → busca a lista de novidades não lidas (novos imóveis e reduções de preço).
+  - `POST /novidades/{id}/visto` → marca uma novidade como lida.
+  - `POST /novidades/limpar` → marca todas as novidades pendentes como lidas.
 - Photos are served as **static files** from the API at `/fotos/{id}/foto_N.webp`. Frontend uses `http://localhost:8000` + the path.
 
 ### Map ↔ Sidebar Interactivity

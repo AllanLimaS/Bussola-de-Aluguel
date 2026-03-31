@@ -30,6 +30,12 @@
 
 Para rodar este projeto na sua máquina, siga os passos abaixo:
 
+### Atalho Rápido (Windows)
+Se você já configurou o ambiente conforme as orientações abaixo, use:
+- Execute o arquivo **`run_project.bat`** na raiz do repositório para abrir o Backend e o Frontend simultaneamente em janelas separadas.
+
+---
+
 ### 1. Pré-requisitos
 - Ter o **Python 3.10+** instalado.
 - Ter o **Node.js** (v18+) e o **npm** instalados.
@@ -93,7 +99,7 @@ O **Backend** é dividido em módulos com responsabilidades exclusivas:
   * `api/`: Definição de rotas e Inicialização do FastAPI.
   * `db/`: Conexão com o banco, modelos, e scripts de manipulação de dados como o `manage_db.py`.
   * `scraper/`: Web Scraping e coleta de novos imóveis e imagens.
-  * `data/`: Contém o arquivo de banco em SQLite.
+  * `data/`: Contém o arquivo de banco em SQLite (tabelas: `imoveis`, `historico_precos`, `fotos`, `interacoes`, `execucoes`, `novidades`).
 
 O **Frontend** possui estrutura reativa padrão:
 * `frontend/`
@@ -125,3 +131,4 @@ Esse utilitário usa a biblioteca `questionary` para rodar de forma perfeitament
 - **Filtros Avançados:** Oculte descartados ou veja apenas favoritos com um clique.
 - **Recálculo em Tempo Real:** Botão para forçar a atualização das recomendações após novas interações.
 - **Localização Multi-Zonal:** Suporte para múltiplos bairros de interesse simultâneos.
+- **Feed de Novidades Inteligente:** Alertas de imóveis recém-postados e reduções de preço direto no sidebar.

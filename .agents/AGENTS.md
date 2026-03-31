@@ -70,7 +70,7 @@ VivaReal (web)
      ▼ Playwright (backend/scraper/scraper.py)
      │
      ▼ SQLite via SQLAlchemy (backend/db/database.py)
-     │  Tables: imoveis, historico_precos, fotos, interacoes, execucoes
+     │  Tables: imoveis, historico_precos, fotos, interacoes, execucoes, novidades
      │  Photos: saved as files on disk (backend/data/fotos/{id}/)
      │
      ▼ FastAPI (backend/api/main.py) → http://localhost:8000
@@ -88,7 +88,7 @@ VivaReal (web)
 ### Backend
 - ORM: **SQLAlchemy**. Never write raw SQL — use the models and session from `backend/db/database.py`.
 - Database: local **SQLite** (`.sqlite` file ignored in Git). Do not use another database without explicit instruction.
-- **DB tables:** `imoveis`, `historico_precos`, `fotos`, `interacoes` (like/dislike/neutral per property), `execucoes` (scraper run logs).
+- **DB tables:** `imoveis`, `historico_precos`, `fotos`, `interacoes`, `execucoes`, `novidades`.
 - Photos are stored as **files on disk** at `backend/data/fotos/{imovel_id}/`. The `fotos` table stores only the relative path.
 - Scraping: **always** via `playwright-cli`. Never use `requests` + `BeautifulSoup` for dynamic sites.
 - Geocoding: use **GeoPy** (already integrated in `update_coords.py`). Do not call maps APIs directly.
@@ -113,6 +113,9 @@ VivaReal (web)
 | `GET` | `/imoveis` | Property list (default `status=ativo`, use `?status=todos` for all) |
 | `GET` | `/imoveis/{id}` | Complete details: `fotos[]` (URLs), `historico_precos[]`, `interacao` |
 | `POST` | `/imoveis/{id}/interacao` | Set interaction: `{"tipo": "like"}`, `"dislike"`, or `"neutral"` |
+| `GET` | `/novidades` | List unread news (new properties and price drops) |
+| `POST` | `/novidades/{id}/visto` | Mark a specific news as seen |
+| `POST` | `/novidades/limpar` | Mark all news as seen |
 | `GET` | `/fotos/{path}` | Static file server for property photos |
 
 > The API runs at `http://localhost:8000`. The frontend consumes it via Axios.

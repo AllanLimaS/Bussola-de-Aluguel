@@ -1,8 +1,9 @@
 import React from 'react';
-import { Filter } from 'lucide-react';
+import { Filter, Bell } from 'lucide-react';
 import FilterPanel from './FilterPanel';
 import PropertyCard from './PropertyCard';
 import LoadingOverlay from '../UI/LoadingOverlay';
+import NovidadesPanel from './NovidadesPanel';
 
 const Sidebar = ({ 
   imoveis, 
@@ -19,19 +20,37 @@ const Sidebar = ({
   onInteragir,
   cardsRef,
   onRecalculate,
-  onOpenMatchInfo
+  onOpenMatchInfo,
+  novidades = [],
+  showNovidades,
+  setShowNovidades,
+  onMarcarNovidadeVisto,
+  onLimparNovidades
 }) => {
   return (
     <div className="w-full h-full flex flex-col border-r border-slate-800 bg-slate-900 shadow-2xl z-10 overflow-hidden">
       <header className="p-6 border-b border-slate-800 shrink-0 bg-slate-900/80 backdrop-blur-md">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-black text-indigo-400 tracking-tighter uppercase italic">Bússola de Aluguel</h1>
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-2.5 rounded-xl transition-all shadow-lg ${showFilters ? 'bg-indigo-600 text-white shadow-indigo-600/20' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}
-          >
-            <Filter size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowNovidades(true)}
+              className={`p-2.5 rounded-xl transition-all shadow-lg relative ${novidades.length > 0 ? 'bg-slate-800 text-indigo-400 border border-indigo-500/20' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}
+            >
+              <Bell size={20} />
+              {novidades.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-slate-900 animate-pulse">
+                  {novidades.length}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2.5 rounded-xl transition-all shadow-lg ${showFilters ? 'bg-indigo-600 text-white shadow-indigo-600/20' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}
+            >
+              <Filter size={20} />
+            </button>
+          </div>
         </div>
         
         <FilterPanel 
@@ -94,6 +113,18 @@ const Sidebar = ({
           ))
         )}
       </div>
+
+      <NovidadesPanel 
+        isOpen={showNovidades}
+        novidades={novidades}
+        onClose={() => setShowNovidades(false)}
+        onMarcarVisto={onMarcarNovidadeVisto}
+        onLimparTudo={onLimparNovidades}
+        onVerImovel={(id) => {
+          setShowNovidades(false);
+          onOpenDetail(id);
+        }}
+      />
     </div>
   );
 };

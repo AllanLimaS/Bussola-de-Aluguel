@@ -199,6 +199,52 @@ def interagir_imovel(imovel_id: int, request: InteracaoRequest, db: Session = De
     print(f"Sucesso: Interacao salva para imovel {imovel_id}")
     return {"status": "success", "tipo": request.tipo}
 
+@app.get("/novidades")
+def list_novidades(db: Session = Depends(get_db)):
+    """
+    Retorna as novidades não visualizadas.
+    """
+    novidades = db.query(db_config.Novidade)\
+        .filter(db_config.Novidade.visualizado == False)\
+        .order_by(db_config.Novidade.created_at.desc())\
+        .all()
+    
+    results = []
+    for n in novidades:
+        imovel = n.imovel
+        foto_principal = None
+        if imovel.fotos:
+            foto_principal = f"/fotos/{imovel.fotos[0].foto_path}"
+        
+        results.append({
+            "id": n.id,
+            "tipo": n.tipo,
+            "imovel_id": n.imovel_id,
+            "titulo": imovel.titulo,
+            "endereco": imovel.endereco,
+            "preco_antigo": n.preco_antigo.preco_aluguel if n.preco_antigo else None,
+            "preco_novo": n.preco_novo.preco_aluguel,
+            "foto": foto_principal,
+            "created_at": n.created_at
+        })
+    return results
+
+@app.post("/novidades/{novidade_id}/visto")
+def marcar_novidade_visto(novidade_id: int, db: Session = Depends(get_db)):
+    novidade = db.query(db_config.Novidade).filter(db_config.Novidade.id == novidade_id).first()
+    if not novidade:
+        raise HTTPException(status_code=404, detail="Novidade não encontrada")
+    
+    novidade.visualizado = True
+    db.commit()
+    return {"status": "success"}
+
+@app.post("/novidades/limpar")
+def limpar_novidades(db: Session = Depends(get_db)):
+    db.query(db_config.Novidade).filter(db_config.Novidade.visualizado == False).update({"visualizado": True})
+    db.commit()
+    return {"status": "success"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

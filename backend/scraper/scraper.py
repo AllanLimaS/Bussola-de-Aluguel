@@ -22,7 +22,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db.database import SessionLocal, Imovel, HistoricoPreco, Foto, Execucao, PHOTOS_DIR, init_db, InteracaoImovel
+from db.database import SessionLocal, Imovel, HistoricoPreco, Foto, Execucao, PHOTOS_DIR, init_db, InteracaoImovel, Novidade
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
@@ -473,6 +473,25 @@ async def main():
                             foto = Foto(imovel_id=imovel.id, foto_path=relative_path)
                             session.add(foto)
                         
+                        session.commit() # Commit para garantir ID do imóvel e fotos
+
+                        # Registrar novidade: Imóvel Novo
+                        # Precisamos do histórico de preço para vincular
+                        hist_novo = HistoricoPreco(
+                            imovel_id=imovel.id,
+                            preco_aluguel=novo_alu,
+                            preco_condominio=novo_con
+                        )
+                        session.add(hist_novo)
+                        session.commit()
+
+                        novidade = Novidade(
+                            imovel_id=imovel.id,
+                            tipo="novo",
+                            preco_novo_id=hist_novo.id
+                        )
+                        session.add(novidade)
+                        
                         contadores["novos"] += 1
                     else:
                         # --- Imóvel já existe: atualiza dados e marca como ativo ---
@@ -489,6 +508,7 @@ async def main():
                     
                     # --- Verificação de queda de preço para reset de dislike ---
                     if imovel and imovel.id:
+                        # --- Verificação de queda de preço para reset de dislike ---
                         ultimo_hist = session.query(HistoricoPreco).filter(HistoricoPreco.imovel_id == imovel.id).order_by(HistoricoPreco.id.desc()).first()
                         if ultimo_hist and novo_alu < ultimo_hist.preco_aluguel:
                             # Preço caiu! Limpar dislike para o usuário reavaliar
@@ -499,14 +519,33 @@ async def main():
                             if interacao_dislike:
                                 session.delete(interacao_dislike)
                                 print(f"\n  [PRICE DROP] Dislike resetado para o imovel {imovel.id} (R$ {ultimo_hist.preco_aluguel} -> R$ {novo_alu})")
+                            
+                            # Sempre insere o registro no historico de preco antes da novidade
+                            hist_novo = HistoricoPreco(
+                                imovel_id=imovel.id,
+                                preco_aluguel=novo_alu,
+                                preco_condominio=novo_con
+                            )
+                            session.add(hist_novo)
+                            session.commit()
+
+                            # Registrar novidade: Redução de Preço
+                            novidade = Novidade(
+                                imovel_id=imovel.id,
+                                tipo="preco_reduzido",
+                                preco_antigo_id=ultimo_hist.id,
+                                preco_novo_id=hist_novo.id
+                            )
+                            session.add(novidade)
+                        else:
+                            # Se não caiu o preço, apenas adiciona o histórico normalmente
+                            hist_normal = HistoricoPreco(
+                                imovel_id=imovel.id,
+                                preco_aluguel=novo_alu,
+                                preco_condominio=novo_con
+                            )
+                            session.add(hist_normal)
                     
-                    # Sempre insere o registro no historico de preco por exigencia de auditoria
-                    hist = HistoricoPreco(
-                        imovel_id=imovel.id,
-                        preco_aluguel=novo_alu,
-                        preco_condominio=novo_con
-                    )
-                    session.add(hist)
                 session.commit()
                 
                 # --- Ciclo de vida: marcar imóveis não vistos ---

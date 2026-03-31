@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime, Text
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import datetime
@@ -89,6 +89,21 @@ class Execucao(Base):
     total_paginas_scrapadas = Column(Integer, default=0)
     status = Column(String, default="rodando")          # "rodando" | "completo" | "parcial" | "erro"
     erro_mensagem = Column(Text, nullable=True)
+
+class Novidade(Base):
+    __tablename__ = "novidades"
+
+    id = Column(Integer, primary_key=True, index=True)
+    imovel_id = Column(Integer, ForeignKey("imoveis.id"))
+    tipo = Column(String)  # "novo" | "preco_reduzido"
+    preco_antigo_id = Column(Integer, ForeignKey("historico_precos.id"), nullable=True)
+    preco_novo_id = Column(Integer, ForeignKey("historico_precos.id"))
+    visualizado = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+
+    imovel = relationship("Imovel")
+    preco_antigo = relationship("HistoricoPreco", foreign_keys=[preco_antigo_id])
+    preco_novo = relationship("HistoricoPreco", foreign_keys=[preco_novo_id])
 
 def init_db():
     Base.metadata.create_all(bind=engine)

@@ -221,7 +221,7 @@ After extracting the data with `playwright-cli eval`, the results must be persis
 2. Parse it with `json.loads()`.
 3. Pass the data to the insertion functions defined in `database.py`.
 
-**Available tables:** `Imovel`, `HistoricoPreco`, `Foto` (stores file path, not base64), `InteracaoImovel` (like/dislike), `Execucao` (scraper run logs).
+**Available tables:** `Imovel`, `HistoricoPreco`, `Foto`, `InteracaoImovel`, `Execucao`, `Novidade` (registra novos imóveis e reduções de preço automaticamente no scraper).
 
 **Photos:** Download as raw bytes and save to `backend/data/fotos/{imovel_id}/foto_N.webp`. Store only the relative path in the `fotos` table.
 
