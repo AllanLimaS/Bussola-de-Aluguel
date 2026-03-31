@@ -213,13 +213,17 @@ playwright-cli close
 
 ## Saving Results
 
-After extracting the data with `playwright-cli eval`, the results must be persisted via the `backend/database.py` project module, which manages the connection to SQLite through SQLAlchemy.
+After extracting the data with `playwright-cli eval`, the results must be persisted via the `backend/db/database.py` project module, which manages the connection to SQLite through SQLAlchemy.
 
 **Do not save in JSON or CSV directly.** The correct pipeline is:
 
 1. Extract the data with `playwright-cli eval` (returns JSON string).
 2. Parse it with `json.loads()`.
 3. Pass the data to the insertion functions defined in `database.py`.
+
+**Available tables:** `Imovel`, `HistoricoPreco`, `Foto` (stores file path, not base64), `InteracaoImovel` (like/dislike), `Execucao` (scraper run logs).
+
+**Photos:** Download as raw bytes and save to `backend/data/fotos/{imovel_id}/foto_N.webp`. Store only the relative path in the `fotos` table.
 
 ```python
 import subprocess, json
@@ -239,7 +243,7 @@ db.commit()
 db.close()
 ```
 
-> Consult `backend/database.py` for available models and functions before writing the persistence code.
+> Consult `backend/db/database.py` for available models and functions before writing the persistence code.
 
 ---
 

@@ -256,9 +256,13 @@ async def get_property_details(browser, url, current_idx, total_count):
         for el in photo_elements:
             srcset = await el.get_attribute('srcset')
             if srcset:
-                first_url = srcset.split(',')[0].split(' ')[0].strip()
-                if "/img/vr-listing/" in first_url and first_url not in photo_urls:
-                    photo_urls.append(first_url)
+                parts = [p.strip() for p in srcset.split(',') if p.strip()]
+                # Pega a penúltima qualidade para equilíbrio entre peso e resolução
+                target = parts[-2] if len(parts) >= 2 else parts[0]
+                photo_url = target.split(' ')[0].strip()
+                
+                if "/img/vr-listing/" in photo_url and photo_url not in photo_urls:
+                    photo_urls.append(photo_url)
         
         details["fotos"] = photo_urls
 

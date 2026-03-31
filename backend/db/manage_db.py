@@ -11,7 +11,7 @@ if sys.platform == 'win32':
 # Garante que o script consiga encontrar a pasta db/ 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db.database import SessionLocal, Imovel, HistoricoPreco, Foto, Execucao, PHOTOS_DIR, init_db
+from db.database import SessionLocal, Imovel, HistoricoPreco, Foto, Execucao, InteracaoImovel, PHOTOS_DIR, init_db
 
 def clean_table(table_name="all"):
     """Deleta todos os registros de tabelas especificas."""
@@ -34,6 +34,10 @@ def clean_table(table_name="all"):
         if table_name in ["Execucoes", "Todas as Tabelas"]:
             total = db.query(Execucao).delete()
             print(f"[*] Tabela 'execucoes' limpa. ({total} registros removidos)")
+            
+        if table_name in ["Interacoes", "Todas as Tabelas"]:
+            total = db.query(InteracaoImovel).delete()
+            print(f"[*] Tabela 'interacoes' limpa. ({total} registros removidos)")
             
         if table_name in ["Imoveis", "Todas as Tabelas"]:
             total = db.query(Imovel).delete()
@@ -178,6 +182,7 @@ def main():
                     "Fotos",
                     "Historico de Precos",
                     "Execucoes",
+                    "Interacoes",
                     "Todas as Tabelas",
                     "Cancelar"
                 ]

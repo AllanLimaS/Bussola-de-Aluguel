@@ -1,23 +1,93 @@
 @import "tailwindcss";
-
-/* Importar CSS do Leaflet */
 @import 'leaflet/dist/leaflet.css';
+
+/* Definir Variáveis de Tema (Design Tokens) */
+:root {
+  --bg-primary: #020617; /* slate-950 */
+  --bg-secondary: #0f172a; /* slate-900 */
+  --bg-card: #1e293b; /* slate-800 */
+  --accent-primary: #6366f1; /* indigo-500 */
+  --accent-secondary: #4f46e5; /* indigo-600 */
+  --accent-hover: #818cf8; /* indigo-400 */
+  --accent-soft: rgba(99, 102, 241, 0.1); /* indigo-500/10 */
+  --border-main: #1e293b; /* slate-800 */
+  --border-muted: #334155; /* slate-700 */
+  --text-primary: #f1f5f9; /* slate-100 */
+  --text-secondary: #94a3b8; /* slate-400 */
+  --text-muted: #64748b; /* slate-500 */
+  --favorite-color: #ec4899; /* pink-500 */
+}
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #020617; /* slate-950 */
-}
-
-/* Filtro dark removido a pedido do usuário */
-
-.dark-map .leaflet-container {
-  background: #0f172a;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 /* Ajuste fino para os popups no dark mode */
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background-color: #1e293b !important; /* slate-800 */
-  color: #f1f5f9 !important; /* slate-100 */
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-muted);
+}
+
+.marker-highlight {
+  filter: drop-shadow(0 0 10px var(--accent-primary));
+  z-index: 1000 !important;
+}
+
+.map-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  width: 25px;
+  height: 25px;
+  border: 2px solid white;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.map-marker::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  transform: rotate(45deg);
+}
+
+/* Variante Normal (Azul) */
+.map-marker--normal {
+  background-color: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+/* Variante Favorito (Magenta) */
+.map-marker--favorite {
+  background-color: var(--favorite-color);
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+}
+
+/* Estado em Destaque (Hover/Selecionado) */
+.map-marker--highlight {
+  width: 35px;
+  height: 35px;
+  z-index: 1000 !important;
+}
+
+.map-marker--highlight.map-marker--normal {
+  box-shadow: 0 0 20px var(--accent-primary);
+}
+
+.map-marker--highlight.map-marker--favorite {
+  box-shadow: 0 0 20px var(--favorite-color);
+}
+
+/* Transições suaves para os markers */
+.leaflet-marker-icon {
+  transition: opacity 0.4s ease, transform 0.3s ease, filter 0.3s ease !important;
 }

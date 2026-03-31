@@ -42,9 +42,10 @@ frontend/
 
 The application is a **rental properties dashboard** with:
 
-- **Sidebar (1/3 of the screen):** list of property cards with thumbnail, summarized info, collapsible filters, and price sorting.
+- **Sidebar (1/3 of the screen):** list of property cards with thumbnail, summarized info, collapsible filters, price sorting, and like/dislike buttons.
 - **Map (2/3 of the screen):** Leaflet with interactive markers that sync hover/click with the sidebar.
-- **Details Modal:** photo carousel, full data, mini location map, price evolution chart (Recharts).
+- **Details Modal:** photo carousel, full data, mini location map, price evolution chart (Recharts), like/dislike interaction.
+- **Interactions:** each property can be marked as `like`, `dislike`, or `neutral` via the `interacoes` table. Liked properties can be filtered ("Favoritos"), disliked ones hidden.
 
 All logic is concentrated in `App.jsx` (single component, ~550 lines).
 
@@ -69,9 +70,10 @@ All logic is concentrated in `App.jsx` (single component, ~550 lines).
 - State managed with `useState` / `useMemo` in `App.jsx`.
 - Data comes from the FastAPI API at `http://localhost:8000`.
 - **Endpoints used:**
-  - `GET /imoveis` → summarized list (includes `foto_principal` in base64).
-  - `GET /imoveis/{id}` → full details (fotos[], historico_precos[]).
-- Photos arrive as **base64 strings**. The frontend checks if it already has the `data:image` prefix before mounting the `src`.
+  - `GET /imoveis` → property list (default `status=ativo`). Includes `foto_principal` as URL and `interacao` field.
+  - `GET /imoveis/{id}` → full details (fotos[] as URLs, historico_precos[], interacao).
+  - `POST /imoveis/{id}/interacao` → set like/dislike/neutral: `{"tipo": "like"}`.
+- Photos are served as **static files** from the API at `/fotos/{id}/foto_N.webp`. Frontend uses `http://localhost:8000` + the path.
 
 ### Map ↔ Sidebar Interactivity
 - Hover on a card highlights the marker on the map (and vice versa) via `hoveredImovelId`.

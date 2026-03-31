@@ -24,17 +24,26 @@ Bussola-de-Aluguel/
 │       ├── scraper-dev/SKILL.md          ← guide for scraping tasks
 │       └── playwright-cli/SKILL.md       ← reference for playwright-cli commands
 ├── backend/
-│   ├── api.py                            ← FastAPI routes
-│   ├── database.py                       ← SQLAlchemy models + SQLite session
-│   ├── scraper.py                        ← data collection via Playwright
-│   ├── seed.py                           ← initial data load script
-│   └── update_coords.py                  ← address geocoding (GeoPy)
+│   ├── api/
+│   │   └── main.py                       ← FastAPI routes (serves photos via StaticFiles)
+│   ├── db/
+│   │   ├── database.py                   ← SQLAlchemy models + SQLite session
+│   │   ├── manage_db.py                  ← CLI to manage database (seed, cleanup, view executions)
+│   │   ├── migrate.py                    ← Manual migration scripts
+│   │   └── seed.py                       ← Initial data load script
+│   ├── scraper/
+│   │   └── scraper.py                    ← Data collection via Playwright (async)
+│   ├── data/                             ← (gitignored) SQLite + photos on disk
+│   │   ├── banco.sqlite
+│   │   ├── fotos/{imovel_id}/foto_N.webp
+│   │   └── logs/
+│   └── run_scraper.bat                   ← Scheduled execution script (Windows Task Scheduler)
 └── frontend/
     ├── src/
-    │   ├── App.jsx                       ← single component, the entire application
-    │   ├── main.jsx                      ← mounts <App /> to #root
+    │   ├── App.jsx                       ← Single component, the entire application
+    │   ├── main.jsx                      ← Mounts <App /> to #root
     │   └── index.css                     ← Tailwind + external lib overrides
-    └── package.json                      ← dependencies and project real versions
+    └── package.json                      ← Dependencies and versions
 ```
 
 ---
@@ -46,7 +55,7 @@ Bussola-de-Aluguel/
 | Change UI, components, styles, filters, map, charts | `.agents/skills/frontend-dev/SKILL.md` |
 | Scraping, data collection, browser automation | `.agents/skills/scraper-dev/SKILL.md` |
 | Any browser command (open, click, snapshot, eval) | `.agents/skills/playwright-cli/SKILL.md` |
-| API routes, database models, utility scripts | Read `backend/api.py` and `backend/database.py` directly |
+| API routes, database models, utility scripts | Read `backend/api/main.py` and `backend/db/database.py` directly |
 
 > **Rule:** read the corresponding skill **before** writing any code. Skills contain
 > patterns, restrictions, and known pitfalls that avoid rework.
@@ -58,11 +67,14 @@ Bussola-de-Aluguel/
 ```
 VivaReal (web)
      │
-     ▼ playwright (scraper.py)
+     ▼ Playwright (backend/scraper/scraper.py)
      │
-     ▼ SQLite via SQLAlchemy (database.py)
+     ▼ SQLite via SQLAlchemy (backend/db/database.py)
+     │  Tables: imoveis, historico_precos, fotos, interacoes, execucoes
+     │  Photos: saved as files on disk (backend/data/fotos/{id}/)
      │
-     ▼ FastAPI (api.py) → http://localhost:8000
+     ▼ FastAPI (backend/api/main.py) → http://localhost:8000
+     │  Static photo serving: /fotos/{id}/foto_N.webp
      │
      ▼ Axios (frontend)
      │
@@ -74,8 +86,10 @@ VivaReal (web)
 ## Global Project Conventions
 
 ### Backend
-- ORM: **SQLAlchemy**. Never write raw SQL — use the models and session from `database.py`.
+- ORM: **SQLAlchemy**. Never write raw SQL — use the models and session from `backend/db/database.py`.
 - Database: local **SQLite** (`.sqlite` file ignored in Git). Do not use another database without explicit instruction.
+- **DB tables:** `imoveis`, `historico_precos`, `fotos`, `interacoes` (like/dislike/neutral per property), `execucoes` (scraper run logs).
+- Photos are stored as **files on disk** at `backend/data/fotos/{imovel_id}/`. The `fotos` table stores only the relative path.
 - Scraping: **always** via `playwright-cli`. Never use `requests` + `BeautifulSoup` for dynamic sites.
 - Geocoding: use **GeoPy** (already integrated in `update_coords.py`). Do not call maps APIs directly.
 
@@ -96,8 +110,10 @@ VivaReal (web)
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/imoveis` | Summarized property list (includes `foto_principal` in base64) |
-| `GET` | `/imoveis/{id}` | Complete details: `fotos[]`, `historico_precos[]` |
+| `GET` | `/imoveis` | Property list (default `status=ativo`, use `?status=todos` for all) |
+| `GET` | `/imoveis/{id}` | Complete details: `fotos[]` (URLs), `historico_precos[]`, `interacao` |
+| `POST` | `/imoveis/{id}/interacao` | Set interaction: `{"tipo": "like"}`, `"dislike"`, or `"neutral"` |
+| `GET` | `/fotos/{path}` | Static file server for property photos |
 
 > The API runs at `http://localhost:8000`. The frontend consumes it via Axios.
 
@@ -105,9 +121,9 @@ VivaReal (web)
 
 ## How photos work
 
-Photos arrive from the API as **base64 strings**. Before mounting the `src` attribute, the frontend checks
-if the string already has the `data:image` prefix. If it does not, it adds it. Keep this pattern in
-any change that involves images.
+Photos are stored as **files on disk** at `backend/data/fotos/{imovel_id}/foto_N.webp`.
+The API serves them via FastAPI's `StaticFiles` mount at `/fotos/`. In the frontend, photo URLs
+look like `http://localhost:8000/fotos/42/foto_0.webp`. The DB `fotos` table stores only the relative path.
 
 ---
 
