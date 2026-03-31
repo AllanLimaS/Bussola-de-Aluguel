@@ -5,3 +5,5 @@ uvicorn
 sqlalchemy
 geopy
 questionary
+python-dotenv
+httpx

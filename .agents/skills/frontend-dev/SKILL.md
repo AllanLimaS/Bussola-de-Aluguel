@@ -28,8 +28,12 @@ frontend/
 ├── src/
 │   ├── main.jsx        # Mounts <App /> to #root
 │   ├── index.css       # Tailwind + Leaflet CSS + global overrides
-│   ├── App.css         # Legacy CSS (does not style current App)
-│   └── App.jsx         # Single component — the entire application
+│   ├── App.jsx         # Componente principal (Orquestração e Estado)
+│   └── components/
+│       ├── Sidebar/    # Sidebar, FilterPanel, PropertyCard, MatchInfoModal
+│       ├── Map/        # MainMap, CustomMarkers
+│       ├── Modal/      # PropertyDetailModal, AttributeGrid
+│       └── UI/         # LoadingOverlay, Badges
 └── public/             # Static files (favicon, etc.)
 ```
 
@@ -38,16 +42,10 @@ frontend/
 
 ---
 
-## Application Context
-
-The application is a **rental properties dashboard** with:
-
-- **Sidebar (1/3 of the screen):** list of property cards with thumbnail, summarized info, collapsible filters, price sorting, and like/dislike buttons.
-- **Map (2/3 of the screen):** Leaflet with interactive markers that sync hover/click with the sidebar.
-- **Details Modal:** photo carousel, full data, mini location map, price evolution chart (Recharts), like/dislike interaction.
-- **Interactions:** each property can be marked as `like`, `dislike`, or `neutral` via the `interacoes` table. Liked properties can be filtered ("Favoritos"), disliked ones hidden.
-
-All logic is concentrated in `App.jsx` (single component, ~550 lines).
+- **AI-First Matching:** A aplicação prioriza o score de afinidade (%) em toda a interface. 
+    - **Match Tab:** Abas laterais nos cards e modais mostram a nota de match de forma persistente.
+    - **Match Info:** Modal de tela cheia que explica os pesos do algoritmo e o perfil do usuário.
+- **Interactions:** cada imóvel pode ser marcado como `like`, `dislike` ou `neutral`. 
 
 ## What does NOT exist in this project
 
@@ -76,9 +74,9 @@ All logic is concentrated in `App.jsx` (single component, ~550 lines).
 - Photos are served as **static files** from the API at `/fotos/{id}/foto_N.webp`. Frontend uses `http://localhost:8000` + the path.
 
 ### Map ↔ Sidebar Interactivity
-- Hover on a card highlights the marker on the map (and vice versa) via `hoveredImovelId`.
-- Click on a marker scrolls to the corresponding card via `scrollToCard` + `cardsRef`.
-- Click on a card opens the details modal via `handleOpenDetail`.
+- Hover em um card destaca o marcador no mapa (e vice-versa) via `hoveredImovelId`.
+- Clique em um marcador faz scroll para o card correspondente via `scrollToCard` + `cardsRef`.
+- **Botões de Interação:** No modal de detalhes, use apenas ícones (Heart, Trash, etc) para manter o visual limpo e premium.
 
 ---
 

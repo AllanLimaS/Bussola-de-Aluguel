@@ -252,6 +252,7 @@ db.close()
 Behaviors already identified when scraping VivaReal. Update this section as new patterns are discovered.
 
 - **Dynamic loading:** the listing is an SPA. The property cards only appear after the JavaScript loads. Always use `playwright-cli snapshot` to confirm that the results are in the DOM before extracting.
+- **Price and Condominium (Critical):** the new Match engine (AI) uses the **Total Price** (Rent + Condo) as 50% of the score. It is ESSENTIAL to extract the condo value separately if available, so that the user's financial affinity is accurate.
 - **Null fields:** the `area`, `vagas`, and `condominio` fields frequently arrive as `null` or empty string. The extraction code must handle these cases with `?.` and default values.
 - **Pagination:** the next page button may not exist on the last page — always check with `eval` before trying to click.
 - **Bot detection:** if the page returns a captcha or block, apply the `## Anti-Blocking Strategies` before trying again.

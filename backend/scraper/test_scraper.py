@@ -8,8 +8,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scraper import get_property_details
 
 async def test_urls():
-    url_dia = "https://www.vivareal.com.br/imovel/apartamento-2-quartos-praia-brava-de-itajai-bairros-itajai-com-garagem-65m2-aluguel-RS550-id-2543214695/"
-    url_misto = "https://www.vivareal.com.br/imovel/apartamento-1-quartos-carvalho-bairros-itajai-com-garagem-40m2-venda-RS318000-id-2877212393/"
+    # Nota: Substitua por URLs reais do seu portal para realizar o teste funcional
+    url_dia = "https://www.provedor-exemplo.com.br/imovel/exemplo-aluguel-por-dia-id-123/"
+    url_misto = "https://www.provedor-exemplo.com.br/imovel/exemplo-venda-e-aluguel-id-456/"
     
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)

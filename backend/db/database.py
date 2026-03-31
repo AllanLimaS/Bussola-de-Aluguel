@@ -36,8 +36,8 @@ class Imovel(Base):
     latitude = Column(Float)
     longitude = Column(Float)
     status = Column(String, default="ativo", index=True)  # "ativo" | "inativo" | "removido"
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    last_seen_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+    last_seen_at = Column(DateTime, default=datetime.datetime.now)
 
     # Relacionamentos
     precos = relationship("HistoricoPreco", back_populates="imovel")
@@ -51,7 +51,7 @@ class HistoricoPreco(Base):
     imovel_id = Column(Integer, ForeignKey("imoveis.id"))
     preco_aluguel = Column(Float)
     preco_condominio = Column(Float)
-    data_coleta = Column(DateTime, default=datetime.datetime.utcnow)
+    data_coleta = Column(DateTime, default=datetime.datetime.now)
 
     imovel = relationship("Imovel", back_populates="precos")
 
@@ -70,7 +70,7 @@ class InteracaoImovel(Base):
     id = Column(Integer, primary_key=True, index=True)
     imovel_id = Column(Integer, ForeignKey("imoveis.id"), unique=True)
     tipo = Column(String)  # "like" | "neutral" | "dislike"
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 
     imovel = relationship("Imovel", back_populates="interacao")
 
@@ -78,7 +78,7 @@ class Execucao(Base):
     __tablename__ = "execucoes"
 
     id = Column(Integer, primary_key=True, index=True)
-    data_inicio = Column(DateTime, default=datetime.datetime.utcnow)
+    data_inicio = Column(DateTime, default=datetime.datetime.now)
     data_fim = Column(DateTime, nullable=True)
     duracao_segundos = Column(Float, nullable=True)
     total_links_encontrados = Column(Integer, default=0)

@@ -70,7 +70,7 @@ def add_fake_data(quantidade=1):
             
             imovel = Imovel(
                 titulo=f"Apartamento Fake CLI #{timestamp}",
-                link=f"https://vivareal.com/teste/cli_{timestamp}",
+                link=f"https://provedor-exemplo.com/teste/cli_{timestamp}",
                 descricao="Gerado pelo gerenciador interativo do terminal. Perfeito para testes.",
                 metragem=50.0 + i,
                 quartos=2,

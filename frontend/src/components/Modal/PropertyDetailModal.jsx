@@ -58,30 +58,44 @@ const PropertyDetailModal = ({
             {/* Card de Preço e Interações */}
             <div className="self-start space-y-4">
               {/* Botões de Interação */}
-              <div className="flex gap-3">
-                <button 
-                  onClick={(e) => onInteragir(e, imovel.id, imovel.interacao === 'like' ? 'neutral' : 'like')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold transition-all border shadow-lg active:scale-95 ${
-                    imovel.interacao === 'like' 
-                      ? 'bg-pink-500 border-pink-400 text-white shadow-pink-500/20' 
-                      : 'bg-slate-800/50 backdrop-blur-sm border-slate-700 text-slate-300 hover:border-pink-500/50 hover:text-pink-400'
-                  }`}
-                >
-                  <Heart size={20} fill={imovel.interacao === 'like' ? 'currentColor' : 'none'} />
-                  {imovel.interacao === 'like' ? 'Favoritado' : 'Favoritar'}
-                </button>
-                
-                <button 
-                  onClick={(e) => onInteragir(e, imovel.id, imovel.interacao === 'dislike' ? 'neutral' : 'dislike')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold transition-all border shadow-lg active:scale-95 ${
-                    imovel.interacao === 'dislike' 
-                      ? 'bg-indigo-600 border-indigo-500 text-white shadow-indigo-600/20' 
-                      : 'bg-slate-800/50 backdrop-blur-sm border-slate-700 text-slate-300 hover:border-indigo-500/50 hover:text-indigo-400'
-                  }`}
-                >
-                  <EyeOff size={20} />
-                  {imovel.interacao === 'dislike' ? 'Descartado' : 'Descartar'}
-                </button>
+              {/* Botões de Interação e Match */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex gap-2">
+                  <button 
+                    onClick={(e) => onInteragir(e, imovel.id, imovel.interacao === 'like' ? 'neutral' : 'like')}
+                    className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all border shadow-md active:scale-95 ${
+                      imovel.interacao === 'like' 
+                        ? 'bg-pink-500 border-pink-400 text-white shadow-pink-500/20' 
+                        : 'bg-slate-800/50 backdrop-blur-sm border-slate-700 text-slate-300 hover:border-pink-500/50 hover:text-pink-400'
+                    }`}
+                    title={imovel.interacao === 'like' ? 'Remover Favorito' : 'Favoritar'}
+                  >
+                    <Heart size={20} fill={imovel.interacao === 'like' ? 'currentColor' : 'none'} />
+                  </button>
+                  
+                  <button 
+                    onClick={(e) => onInteragir(e, imovel.id, imovel.interacao === 'dislike' ? 'neutral' : 'dislike')}
+                    className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all border shadow-md active:scale-95 ${
+                      imovel.interacao === 'dislike' 
+                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-indigo-600/20' 
+                        : 'bg-slate-800/50 backdrop-blur-sm border-slate-700 text-slate-300 hover:border-indigo-500/50 hover:text-indigo-400'
+                    }`}
+                    title={imovel.interacao === 'dislike' ? 'Remover Descarte' : 'Descartar'}
+                  >
+                    <EyeOff size={20} />
+                  </button>
+                </div>
+
+                {/* Match Badge */}
+                {imovel.affinity_score && (
+                  <div className="shrink-0 bg-indigo-600/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-indigo-400/50 shadow-lg shadow-indigo-600/20 flex flex-col items-center justify-center min-w-[65px]">
+                    <span className="text-[7px] font-black uppercase tracking-tighter text-indigo-100 leading-none mb-0.5 opacity-80">Match</span>
+                    <div className="flex items-baseline gap-0.5">
+                      <span className="text-white font-black text-base leading-none">{Math.round(imovel.affinity_score)}</span>
+                      <span className="text-indigo-200 font-bold text-[9px]">%</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="bg-gradient-to-br from-indigo-500/10 to-slate-800/30 border border-indigo-500/30 p-6 rounded-3xl space-y-4 shadow-xl">

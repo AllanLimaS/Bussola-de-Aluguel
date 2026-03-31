@@ -10,6 +10,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db import database as db_config
+from api import recommendation
 
 app = FastAPI(title="Bússola de Aluguel API")
 
@@ -85,6 +86,58 @@ def list_imoveis(
             "foto_principal": foto_principal
         })
     return results
+
+@app.get("/imoveis/recomendados")
+def list_recomendados(
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna os imóveis recomendados com base nos likes do usuário.
+    """
+    try:
+        user_profile, recomendacoes = recommendation.get_recommended_listings(db)
+        
+        results = []
+        for item in recomendacoes:
+            imovel = item["imovel"]
+            score = item["affinity_score"]
+            
+            ultimo_preco = db.query(db_config.HistoricoPreco)\
+                .filter(db_config.HistoricoPreco.imovel_id == imovel.id)\
+                .order_by(db_config.HistoricoPreco.data_coleta.desc())\
+                .first()
+            
+            foto_principal = None
+            if imovel.fotos:
+                foto_principal = f"/fotos/{imovel.fotos[0].foto_path}"
+            
+            results.append({
+                "id": imovel.id,
+                "titulo": imovel.titulo,
+                "link": imovel.link,
+                "endereco": imovel.endereco,
+                "metragem": imovel.metragem,
+                "quartos": imovel.quartos,
+                "banheiros": imovel.banheiros,
+                "vagas": imovel.vagas,
+                "preco_aluguel": ultimo_preco.preco_aluguel if ultimo_preco else None,
+                "preco_condominio": ultimo_preco.preco_condominio if ultimo_preco else None,
+                "latitude": imovel.latitude,
+                "longitude": imovel.longitude,
+                "status": imovel.status,
+                "interacao": imovel.interacao.tipo if imovel.interacao else "neutral",
+                "quantidade_fotos": len(imovel.fotos),
+                "foto_principal": foto_principal,
+                "affinity_score": score
+            })
+            
+        return {
+            "profile": user_profile,
+            "results": results
+        }
+    except Exception as e:
+        print(f"Erro ao gerar recomendacoes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/imoveis/{imovel_id}")
 def get_imovel_detail(imovel_id: int, db: Session = Depends(get_db)):

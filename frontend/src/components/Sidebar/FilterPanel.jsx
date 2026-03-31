@@ -61,7 +61,7 @@ const FilterPanel = ({ show, filters, onFilterChange, onClearFilters }) => {
             name="ordenacao" value={filters.ordenacao} onChange={onFilterChange}
             className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors text-slate-200"
           >
-            <option value="">Padrão</option>
+            <option value="match">Melhor Match ✨</option>
             <option value="menor_preco">Menor Preço</option>
             <option value="maior_preco">Maior Preço</option>
           </select>

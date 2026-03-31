@@ -13,18 +13,26 @@ from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 import httpx
 import argparse
+from dotenv import load_dotenv
+
+# Carregar variáveis do arquivo .env
+load_dotenv()
 
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db.database import SessionLocal, Imovel, HistoricoPreco, Foto, Execucao, PHOTOS_DIR, init_db
+from db.database import SessionLocal, Imovel, HistoricoPreco, Foto, Execucao, PHOTOS_DIR, init_db, InteracaoImovel
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 
 # Configuration
-BASE_URL = "https://www.vivareal.com.br"
-SEARCH_URL = "https://www.vivareal.com.br/aluguel/santa-catarina/itajai/apartamento_residencial/?onde=%2CSanta+Catarina%2CItaja%C3%AD%2C%2C%2C%2C%2Ccity%2CBR%3ESanta+Catarina%3ENULL%3EItajai%2C-26.908278%2C-48.677511%2C&precoMaximo=3000"
+BASE_URL = os.getenv("SOURCE_BASE_URL", "https://www.provedor-exemplo.com.br")
+SEARCH_URL = os.getenv("SOURCE_SEARCH_URL")
+
+if not SEARCH_URL:
+    print("\n[ERRO] SEARCH_URL não encontrada no arquivo .env! Verifique se seu arquivo .env está configurado corretamente.")
+    sys.exit(1)
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -96,7 +104,7 @@ async def download_image(client, url):
             await asyncio.sleep(1)
     return None
 
-async def get_property_details(browser, url, current_idx, total_count):
+async def get_property_details(browser, url, current_idx, total_count, download_photos=True):
     match_id = re.search(r"id-(\d+)", url)
     listing_id = match_id.group(1) if match_id else str(random.randint(1000,9999))
     
@@ -244,39 +252,44 @@ async def get_property_details(browser, url, current_idx, total_count):
         except: pass
 
         # PHOTO EXTRACTION (Definitive Headless Fix)
-        print_progress(current_idx, total_count, f"Expanding photos for {listing_id}...")
-        
-        photo_btn = page.locator('#modal-image-button, button:has-text("fotos"), button:has-text("Fotos")').first
-        if await photo_btn.count() > 0:
-            await photo_btn.click(force=True)
-            await asyncio.sleep(5)
-
-        photo_elements = await page.locator('.image-container__item picture source, picture source[srcset]').all()
-        photo_urls = []
-        for el in photo_elements:
-            srcset = await el.get_attribute('srcset')
-            if srcset:
-                parts = [p.strip() for p in srcset.split(',') if p.strip()]
-                # Pega a penúltima qualidade para equilíbrio entre peso e resolução
-                target = parts[-2] if len(parts) >= 2 else parts[0]
-                photo_url = target.split(' ')[0].strip()
-                
-                if "/img/vr-listing/" in photo_url and photo_url not in photo_urls:
-                    photo_urls.append(photo_url)
-        
-        details["fotos"] = photo_urls
-
+        details["fotos"] = []
         details["fotos_bytes"] = []
-        if photo_urls:
-            async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
-                for p_url in photo_urls[:20]:
-                    img_bytes = await download_image(client, p_url)
-                    if img_bytes:
-                        details["fotos_bytes"].append(img_bytes)
-                
-                print_progress(current_idx, total_count, f"Scaped {listing_id} ({len(details['fotos_bytes'])} photos)")
+        
+        if download_photos:
+            print_progress(current_idx, total_count, f"Expanding photos for {listing_id}...")
+            
+            photo_btn = page.locator('#modal-image-button, button:has-text("fotos"), button:has-text("Fotos")').first
+            if await photo_btn.count() > 0:
+                await photo_btn.click(force=True)
+                await asyncio.sleep(5)
+
+            photo_elements = await page.locator('.image-container__item picture source, picture source[srcset]').all()
+            photo_urls = []
+            for el in photo_elements:
+                srcset = await el.get_attribute('srcset')
+                if srcset:
+                    parts = [p.strip() for p in srcset.split(',') if p.strip()]
+                    # Pega a penúltima qualidade para equilíbrio entre peso e resolução
+                    target = parts[-2] if len(parts) >= 2 else parts[0]
+                    photo_url = target.split(' ')[0].strip()
+                    
+                    if "/img/vr-listing/" in photo_url and photo_url not in photo_urls:
+                        photo_urls.append(photo_url)
+            
+            details["fotos"] = photo_urls
+
+            if photo_urls:
+                async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+                    for p_url in photo_urls[:20]:
+                        img_bytes = await download_image(client, p_url)
+                        if img_bytes:
+                            details["fotos_bytes"].append(img_bytes)
+                    
+                    print_progress(current_idx, total_count, f"Scaped {listing_id} ({len(details['fotos_bytes'])} photos)")
+            else:
+                print_progress(current_idx, total_count, f"Scaped {listing_id} (0 photos)")
         else:
-            print_progress(current_idx, total_count, f"Scaped {listing_id} (0 photos)")
+            print_progress(current_idx, total_count, f"Scaped {listing_id} (Skipping photos - already in DB)")
 
         await context.close()
         return details
@@ -294,11 +307,11 @@ async def main():
     session = SessionLocal()
     execucao_pendente = session.query(Execucao).filter(Execucao.status == "rodando").first()
     if execucao_pendente:
-        tempo_rodando = (datetime.datetime.utcnow() - execucao_pendente.data_inicio).total_seconds()
+        tempo_rodando = (datetime.datetime.now() - execucao_pendente.data_inicio).total_seconds()
         if tempo_rodando > 21600:  # 6 horas = provavelmente crashou
             print(f"[RECOVERY] Execucao #{execucao_pendente.id} estava 'rodando' ha {tempo_rodando/3600:.1f}h. Marcando como erro.")
             execucao_pendente.status = "erro"
-            execucao_pendente.data_fim = datetime.datetime.utcnow()
+            execucao_pendente.data_fim = datetime.datetime.now()
             execucao_pendente.erro_mensagem = "Marcado como erro automaticamente (timeout 6h)"
             session.commit()
         else:
@@ -310,7 +323,7 @@ async def main():
     # --- Execution tracking: create record at start ---
     session = SessionLocal()
     execucao = Execucao(
-        data_inicio=datetime.datetime.utcnow(),
+        data_inicio=datetime.datetime.now(),
         status="rodando"
     )
     session.add(execucao)
@@ -378,7 +391,13 @@ async def main():
                     
             unique_links = list(unique_links_set)
             total_to_process = len(unique_links)
-            print(f"Verified {total_to_process} listings. Starting Asynchronous PARALLEL scrape...")
+            
+            # Identificar links que já existem no banco de dados para pular fotos
+            session_check = SessionLocal()
+            existing_links = {link for (link,) in session_check.query(Imovel.link).all()}
+            session_check.close()
+            
+            print(f"Verified {total_to_process} listings ({len(existing_links)} already in DB). Starting Asynchronous PARALLEL scrape...")
             await context.close()
 
             semaphore = asyncio.Semaphore(2) # Max concurrent browser pages (reduzido para anti-bot)
@@ -387,7 +406,8 @@ async def main():
                 async with semaphore:
                     # Jitter maior para evitar detecção anti-bot
                     await asyncio.sleep(random.uniform(3.0, 8.0))
-                    return await get_property_details(b, lnk, idx, tot)
+                    download_photos = lnk not in existing_links
+                    return await get_property_details(b, lnk, idx, tot, download_photos=download_photos)
 
             tasks = [fetch_with_sem(browser, link, i+1, total_to_process) for i, link in enumerate(unique_links)]
             results_array = await asyncio.gather(*tasks)
@@ -398,7 +418,7 @@ async def main():
             print(f"\n\nSaving {len(all_results)} results to database...")
 
             session = SessionLocal()
-            geolocator = Nominatim(user_agent="bussola_de_aluguel_scraper")
+            geolocator = Nominatim(user_agent="bussola_de_aluguel_bot")
             
             # Coleta os links processados com sucesso nesta execução
             links_vistos_hoje = set()
@@ -433,7 +453,7 @@ async def main():
                             latitude=lat,
                             longitude=lng,
                             status="ativo",
-                            last_seen_at=datetime.datetime.utcnow()
+                            last_seen_at=datetime.datetime.now()
                         )
                         session.add(imovel)
                         session.commit()
@@ -463,9 +483,22 @@ async def main():
                         imovel.banheiros = extract_numeric(r["banheiros"])
                         imovel.vagas = extract_numeric(r["vagas"])
                         imovel.status = "ativo"
-                        imovel.last_seen_at = datetime.datetime.utcnow()
+                        imovel.last_seen_at = datetime.datetime.now()
                         
                         contadores["atualizados"] += 1
+                    
+                    # --- Verificação de queda de preço para reset de dislike ---
+                    if imovel and imovel.id:
+                        ultimo_hist = session.query(HistoricoPreco).filter(HistoricoPreco.imovel_id == imovel.id).order_by(HistoricoPreco.id.desc()).first()
+                        if ultimo_hist and novo_alu < ultimo_hist.preco_aluguel:
+                            # Preço caiu! Limpar dislike para o usuário reavaliar
+                            interacao_dislike = session.query(InteracaoImovel).filter(
+                                InteracaoImovel.imovel_id == imovel.id,
+                                InteracaoImovel.tipo == "dislike"
+                            ).first()
+                            if interacao_dislike:
+                                session.delete(interacao_dislike)
+                                print(f"\n  [PRICE DROP] Dislike resetado para o imovel {imovel.id} (R$ {ultimo_hist.preco_aluguel} -> R$ {novo_alu})")
                     
                     # Sempre insere o registro no historico de preco por exigencia de auditoria
                     hist = HistoricoPreco(
@@ -477,7 +510,7 @@ async def main():
                 session.commit()
                 
                 # --- Ciclo de vida: marcar imóveis não vistos ---
-                agora = datetime.datetime.utcnow()
+                agora = datetime.datetime.now()
                 limite_removido = agora - datetime.timedelta(days=15)
                 
                 # Todos os imóveis ativos que NÃO apareceram neste scrape → inativo
@@ -561,7 +594,7 @@ async def main():
         try:
             exec_record = session.query(Execucao).get(execucao_id)
             if exec_record:
-                exec_record.data_fim = datetime.datetime.utcnow()
+                exec_record.data_fim = datetime.datetime.now()
                 exec_record.duracao_segundos = round(elapsed_time, 2)
                 exec_record.total_links_encontrados = len(unique_links_set)
                 exec_record.total_novos = contadores["novos"]

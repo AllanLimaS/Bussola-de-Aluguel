@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import MainMap from './components/Map/MainMap';
 import PropertyDetailModal from './components/Modal/PropertyDetailModal';
 import LoadingOverlay from './components/UI/LoadingOverlay';
+import MatchInfoModal from './components/Sidebar/MatchInfoModal';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -19,7 +20,9 @@ function App() {
   const [isHoverFromCard, setIsHoverFromCard] = useState(false);
   const [activeCardId, setActiveCardId] = useState(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  
+  const [showMatchInfo, setShowMatchInfo] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+
   const cardsRef = useRef({});
 
   // Estado dos Filtros
@@ -30,22 +33,37 @@ function App() {
     banheiros: '',
     vagas: '',
     bairro: '',
-    ordenacao: '',
+    ordenacao: 'match',
     mostrarApenasFavoritos: false,
     ocultarDescartados: true
   });
 
-  useEffect(() => {
-    axios.get(`${API_BASE_URL}/imoveis`)
+  const fetchImoveis = () => {
+    setLoading(true);
+    axios.get(`${API_BASE_URL}/imoveis/recomendados`)
       .then(response => {
-        setImoveis(response.data);
+        // Suporte para o novo formato {profile, results} ou formato antigo (array direto)
+        const data = response.data;
+        const results = data.results || (Array.isArray(data) ? data : []);
+        const profile = data.profile || null;
+        
+        setImoveis(results);
+        setUserProfile(profile);
         setLoading(false);
       })
       .catch(error => {
         console.error("Erro ao carregar imóveis:", error);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchImoveis();
   }, []);
+
+  const handleRecalculate = () => {
+    fetchImoveis();
+  };
 
   // Lógica de Filtragem e Ordenação
   const filteredImoveis = useMemo(() => {
@@ -69,6 +87,8 @@ function App() {
       result.sort((a, b) => ((a.preco_aluguel || 0) + (a.preco_condominio || 0)) - ((b.preco_aluguel || 0) + (b.preco_condominio || 0)));
     } else if (filters.ordenacao === 'maior_preco') {
       result.sort((a, b) => ((b.preco_aluguel || 0) + (b.preco_condominio || 0)) - ((a.preco_aluguel || 0) + (a.preco_condominio || 0)));
+    } else if (filters.ordenacao === 'match') {
+      result.sort((a, b) => (b.affinity_score || 0) - (a.affinity_score || 0));
     }
 
     return result;
@@ -96,7 +116,8 @@ function App() {
     setCurrentPhotoIndex(0);
     axios.get(`${API_BASE_URL}/imoveis/${id}`)
       .then(response => {
-        setSelectedImovel(response.data);
+        const baseImovel = imoveis.find(im => im.id === id);
+        setSelectedImovel({ ...response.data, affinity_score: baseImovel?.affinity_score });
         setDetailLoading(false);
       })
       .catch(error => {
@@ -124,13 +145,14 @@ function App() {
   const handleClearFilters = () => {
     setFilters({ 
       precoMin: '', precoMax: '', quartos: '', banheiros: '', vagas: '', 
-      bairro: '', ordenacao: '', mostrarApenasFavoritos: false, ocultarDescartados: true 
+      bairro: '', ordenacao: 'match', mostrarApenasFavoritos: false, ocultarDescartados: true 
     });
   };
 
   return (
     <div className="flex h-screen w-full bg-slate-950 font-sans text-slate-100 uppercase-none overflow-hidden relative">
-      <Sidebar 
+      <div className="w-[440px] h-full shrink-0">
+        <Sidebar 
         imoveis={filteredImoveis}
         loading={loading}
         showFilters={showFilters}
@@ -147,7 +169,10 @@ function App() {
         }}
         onInteragir={handleInteragir}
         cardsRef={cardsRef}
+        onRecalculate={handleRecalculate}
+        onOpenMatchInfo={() => setShowMatchInfo(true)}
       />
+      </div>
 
       <MainMap 
         imoveis={filteredImoveis}
@@ -180,6 +205,12 @@ function App() {
       {detailLoading && (
         <LoadingOverlay message="Buscando detalhes..." fullScreen={true} />
       )}
+
+      <MatchInfoModal 
+        isOpen={showMatchInfo} 
+        onClose={() => setShowMatchInfo(false)} 
+        profile={userProfile}
+      />
     </div>
   );
 }

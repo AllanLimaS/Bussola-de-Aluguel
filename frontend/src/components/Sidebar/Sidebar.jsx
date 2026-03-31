@@ -17,10 +17,12 @@ const Sidebar = ({
   onOpenDetail,
   onHoverCard,
   onInteragir,
-  cardsRef
+  cardsRef,
+  onRecalculate,
+  onOpenMatchInfo
 }) => {
   return (
-    <div className="w-1/3 h-full flex flex-col border-r border-slate-800 bg-slate-900 shadow-2xl z-10 overflow-hidden">
+    <div className="w-full h-full flex flex-col border-r border-slate-800 bg-slate-900 shadow-2xl z-10 overflow-hidden">
       <header className="p-6 border-b border-slate-800 shrink-0 bg-slate-900/80 backdrop-blur-md">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-black text-indigo-400 tracking-tighter uppercase italic">Bússola de Aluguel</h1>
@@ -38,9 +40,35 @@ const Sidebar = ({
           onFilterChange={onFilterChange} 
           onClearFilters={onClearFilters} 
         />
+        
+        <div className="mt-4 space-y-2">
+          <button
+            onClick={onRecalculate}
+            className="w-full py-2.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg border bg-slate-800 text-indigo-400 border-indigo-500/30 hover:bg-slate-700 hover:border-indigo-500/50 hover:text-indigo-300"
+          >
+            <span className="text-lg">✨</span>
+            Recalcular recomendações
+          </button>
+          
+          <button 
+            onClick={onOpenMatchInfo}
+            className="w-full py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-400 transition-colors flex items-center justify-center gap-1.5 group"
+          >
+            <span className="opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all">ℹ️</span>
+            Como funciona o Match?
+          </button>
+        </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-3 custom-scrollbar">
+        {imoveis.length > 0 && !imoveis[0].affinity_score && (
+          <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 mb-2 mx-2">
+            <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider text-center">
+              ⚠️ Dê alguns "Likes" para ver as porcentagens de afinidade!
+            </p>
+          </div>
+        )}
+
         {loading ? (
           <LoadingOverlay message="Carregando imóveis..." />
         ) : imoveis.length === 0 ? (

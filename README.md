@@ -1,6 +1,4 @@
-# Bússola de Aluguel
-
-**Bússola de Aluguel** é uma aplicação Full Stack com o objetivo de ajudar usuários a encontrarem os melhores imóveis para alugar. O sistema faz a busca, coleta (através de *web scraping*) e compilação de imóveis, criando um painel de visualização interativo com dados geográficos, filtros e até gráficos de inteligência para te ajudar na sua tomada de decisão.
+**Bússola de Aluguel** é uma plataforma inteligente focada em transformar a busca por imóveis em uma experiência orientada por dados e afinidade. Utilizando um motor de recomendação proprietário (AI-First), o sistema aprende suas preferências através de interações (Likes/Dislikes) para calcular um score de **Match** preciso, considerando preço total, localização multi-zonal e características do imóvel.
 
 ---
 
@@ -8,7 +6,7 @@
 
 ### Backend (Python)
 - **[FastAPI](https://fastapi.tiangolo.com/):** Fornecimento da API rápida e robusta.
-- **[Playwright](https://playwright.dev/python/):** Web scraping (automação fantasma usando o módulo `playwright-stealth`) para coleta de dados de listagens de imóveis (ex: VivaReal).
+- **[Playwright](https://playwright.dev/python/):** Web scraping (automação fantasma usando o módulo `playwright-stealth`) para coleta de dados de listagens de imóveis em portais de aluguel.
 - **[SQLAlchemy](https://www.sqlalchemy.org/):** ORM para modelagem e comunicação com o banco de dados.
 - **[SQLite](https://www.sqlite.org/):** Banco de dados relacional leve (base local).
 - **[GeoPy](https://geopy.readthedocs.io/):** Conversões de endereços em coordenadas geográficas (Geocoding).
@@ -19,7 +17,12 @@
 - **[React-Leaflet](https://react-leaflet.js.org/):** Visualização de imóveis em no mapa interativo.
 - **[Recharts](https://recharts.org/):** Módulo para criar e desenhar gráficos sobre o mercado de aluguel.
 - **[Lucide React](https://lucide.dev/):** Biblioteca de ícones elegantes.
-- **[Axios](https://axios-http.com/):** Comunicação entre Frontend e a API.
+### Inteligência e Algoritmo (Python)
+- **Motor de Match:** Algoritmo ponderado que considera:
+    - **Preço Total (50%):** Aluguel + Condomínio com penalidade agressiva para desvios de orçamento.
+    - **Localização Multi-Zonal (15%):** Cálculo de proximidade baseado nos seus likes individuais (suporta múltiplos bairros).
+    - **Garagem (20%) e Características (15%):** Afinidade por número de vagas, quartos e metragem.
+- **Transparência Algorítmica:** Painel detalhado ("Como funciona o Match?") que expõe o seu perfil calculado pela IA.
 
 ---
 
@@ -43,6 +46,18 @@ python -m venv venv
 pip install -r requirements.txt
 playwright install chromium
 ```
+
+#### 2.1. Configuração do Scraper (.env)
+
+O sistema de coleta de dados (Scraper) é agnóstico. Para que ele funcione, você deve configurar as URLs de origem no arquivo `.env`.
+
+1. Na pasta `backend/`, crie um arquivo chamado `.env` baseado no `.env.example`.
+2. Preencha as seguintes variáveis:
+   - `SOURCE_BASE_URL`: A URL base do portal de imóveis que deseja utilizar.
+   - `SOURCE_SEARCH_URL`: A URL completa da busca (com filtros de cidade, preço, etc.) que o scraper deve percorrer.
+
+> [!IMPORTANT]
+> O desenvolvedor é responsável por ajustar os seletores do `scraper.py` caso decida utilizar um portal com estrutura de HTML diferente do padrão implementado.
 
 **Para iniciar a API do Backend:**
 
@@ -99,3 +114,14 @@ Garante que está na pasta `backend/` do seu terminal e rode:
 python db/manage_db.py
 ```
 Esse utilitário usa a biblioteca `questionary` para rodar de forma perfeitamente nativa no Windows.
+
+---
+
+## Funcionalidades Principais
+
+- **AI-First Search:** A listagem padrão é sempre ordenada pela sua afinidade (Match %).
+- **Mapa Interativo Sincronizado:** Navegue geograficamente com feedback visual imediato na barra lateral.
+- **Transparência de Perfil:** Veja exatamente quais critérios a IA está usando para te recomendar imóveis.
+- **Filtros Avançados:** Oculte descartados ou veja apenas favoritos com um clique.
+- **Recálculo em Tempo Real:** Botão para forçar a atualização das recomendações após novas interações.
+- **Localização Multi-Zonal:** Suporte para múltiplos bairros de interesse simultâneos.
