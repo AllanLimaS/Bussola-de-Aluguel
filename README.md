@@ -68,9 +68,9 @@ O sistema de coleta de dados (Scraper) é agnóstico. Para que ele funcione, voc
 **Para iniciar a API do Backend:**
 
 ```bash
-uvicorn api.main:app --reload
+uvicorn api.main:app --reload --host 0.0.0.0
 ```
-A API ficará disponível em `http://localhost:8000`.
+A API ficará disponível em `http://localhost:8000` (e no seu IP da rede local).
 
 *Nota: Utilize o arquivo `scraper.py` ou endpoints da API para preencher/atualizar o seu banco de dados (`.sqlite`).*
 
@@ -86,9 +86,12 @@ npm install
 **Para iniciar o painel web:**
 
 ```bash
-npm run dev
+npm run dev -- --host
 ```
-O Vite iniciará, e o app ficará normalmente visível na interface web em `http://localhost:5173`.
+O Vite iniciará, e o app ficará visível em `http://localhost:5173` e também em um endereço `http://192.168.x.x:5173` para acesso via rede local.
+
+> [!TIP]
+> Graças ao proxy configurado no Vite, o frontend agora usa caminhos relativos (`/api`) para falar com o backend. Isso permite que qualquer dispositivo na sua rede acesse o site sem precisar configurar IPs manualmente no código.
 
 ---
 

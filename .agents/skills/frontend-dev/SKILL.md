@@ -66,7 +66,8 @@ frontend/
 
 ### State & Data
 - State managed with `useState` / `useMemo` in `App.jsx`.
-- Data comes from the FastAPI API at `http://localhost:8000`.
+- Data comes from the FastAPI API via Vite proxy at `/api`.
+- **Note:** Never hardcode `http://localhost:8000`. Use caminhos relativos para garantir compatibilidade com acesso via rede local.
 - **Endpoints used:**
   - `GET /imoveis` → property list (default `status=ativo`). Includes `foto_principal` as URL and `interacao` field.
   - `GET /imoveis/{id}` → full details (fotos[] as URLs, historico_precos[], interacao).
@@ -74,7 +75,7 @@ frontend/
   - `GET /novidades` → busca a lista de novidades não lidas (novos imóveis e reduções de preço).
   - `POST /novidades/{id}/visto` → marca uma novidade como lida.
   - `POST /novidades/limpar` → marca todas as novidades pendentes como lidas.
-- Photos are served as **static files** from the API at `/fotos/{id}/foto_N.webp`. Frontend uses `http://localhost:8000` + the path.
+- Photos are served as **static files** from the API at `/fotos/{id}/foto_N.webp`. Frontend uses relative paths (proxied by Vite).
 
 ### Map ↔ Sidebar Interactivity
 - Hover em um card destaca o marcador no mapa (e vice-versa) via `hoveredImovelId`.
@@ -91,21 +92,21 @@ frontend/
 
 After any change in `frontend/src/` files:
 
-1. **Ensure the dev server is running** (`npm run dev`). If not, start it.
-2. **Open the frontend in the browser** (`http://localhost:5173`) and verify:
+1. **Ensure the dev server is running** (`npm run dev -- --host`). If not, start it.
+2. **Open the frontend in the browser** (`http://localhost:5173` ou o IP da rede local) and verify:
    - [ ] The page loads with no errors in the console.
    - [ ] The change made appears correctly.
-   - [ ] The **sidebar** renders the cards normally.
+   - [ ] The **sidebar** renders the cards normally (check if photos load via proxy).
    - [ ] The **map** renders with positioned markers.
    - [ ] The **hover** interaction between sidebar ↔ map works.
    - [ ] The **details modal** opens when clicking a card, showing photos, data, and chart.
    - [ ] The **filters** collapse/expand and filter correctly.
 3. **If the change involves CSS/layout**, check that nothing around it became misaligned or broken.
-4. **If the change involves API calls**, check the browser's Network tab to ensure requests are correct.
+4. **If the change involves API calls**, check the browser's Network tab to ensure requests are relative (e.g., `/api/imoveis`).
 
 ### How to Validate Visually
 
-To validate changes in the browser, consult the `playwright-cli` skill available in `.agents/skills/playwright-cli/SKILL.md`. Use the screenshot and snapshot commands documented there to check the visual state of the application at `http://localhost:5173`.
+To validate changes in the browser, consult the `playwright-cli` skill available in `.agents/skills/playwright-cli/SKILL.md`. Use the screenshot and snapshot commands documented there to check the visual state of the application at `http://localhost:5173` (ou no IP local caso o browser tool suporte).
 
 ---
 

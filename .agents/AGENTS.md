@@ -73,12 +73,13 @@ VivaReal (web)
      │  Tables: imoveis, historico_precos, fotos, interacoes, execucoes, novidades
      │  Photos: saved as files on disk (backend/data/fotos/{id}/)
      │
-     ▼ FastAPI (backend/api/main.py) → http://localhost:8000
+     ▼ FastAPI (backend/api/main.py) → :8000 (host: 0.0.0.0)
      │  Static photo serving: /fotos/{id}/foto_N.webp
      │
-     ▼ Axios (frontend)
+     ▼ Vite Proxy (frontend/vite.config.js) → :5173 (host: true)
+     │  Maps /api/* to :8000/*
      │
-     ▼ React + Leaflet + Recharts → http://localhost:5173
+     ▼ React + Leaflet + Recharts → http://localhost:5173 (ou IP local)
 ```
 
 ---
@@ -118,15 +119,15 @@ VivaReal (web)
 | `POST` | `/novidades/limpar` | Mark all news as seen |
 | `GET` | `/fotos/{path}` | Static file server for property photos |
 
-> The API runs at `http://localhost:8000`. The frontend consumes it via Axios.
+> The API runs at `:8000`. The frontend consumes it via a Vite proxy at `/api`.
 
 ---
 
 ## How photos work
 
 Photos are stored as **files on disk** at `backend/data/fotos/{imovel_id}/foto_N.webp`.
-The API serves them via FastAPI's `StaticFiles` mount at `/fotos/`. In the frontend, photo URLs
-look like `http://localhost:8000/fotos/42/foto_0.webp`. The DB `fotos` table stores only the relative path.
+The API serves them via FastAPI's `StaticFiles` mount at `/fotos/`. In the frontend, photos are accessed via
+relative paths (proxied by Vite) like `/fotos/42/foto_0.webp`. The DB `fotos` table stores only the relative path.
 
 ---
 
