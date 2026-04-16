@@ -54,7 +54,7 @@ const NovidadesPanel = ({ novidades, isOpen, onClose, onMarcarVisto, onLimparTud
                 <div className="flex gap-3">
                   {n.foto ? (
                     <img 
-                      src={`http://localhost:8000${n.foto}`} 
+                      src={`${n.foto}`} 
                       alt="" 
                       className="w-16 h-16 rounded-lg object-cover bg-slate-900 border border-slate-700"
                     />

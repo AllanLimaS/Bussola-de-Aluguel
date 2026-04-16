@@ -57,7 +57,7 @@ const PropertyCard = ({
         <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 relative shadow-inner">
           {imovel.foto_principal ? (
             <img 
-              src={`http://localhost:8000${imovel.foto_principal}`} 
+              src={`${imovel.foto_principal}`} 
               alt="Thumbnail" 
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             />

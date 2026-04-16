@@ -8,7 +8,7 @@ import PropertyDetailModal from './components/Modal/PropertyDetailModal';
 import LoadingOverlay from './components/UI/LoadingOverlay';
 import MatchInfoModal from './components/Sidebar/MatchInfoModal';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = '/api';
 
 function App() {
   const [imoveis, setImoveis] = useState([]);

@@ -6,7 +6,7 @@ const PhotoCarousel = ({
   currentIndex = 0, 
   onPrev, 
   onNext,
-  apiUrl = "http://localhost:8000" 
+  apiUrl = "" 
 }) => {
   if (!fotos || fotos.length === 0) {
     return (

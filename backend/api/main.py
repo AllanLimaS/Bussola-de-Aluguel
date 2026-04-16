@@ -14,11 +14,11 @@ from api import recommendation
 
 app = FastAPI(title="Bússola de Aluguel API")
 
-# Configuração de CORS para permitir que o React acesse a API
+# Configuração de CORS para permitir acesso local e da rede local
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173"], 
-    allow_credentials=True,
+    allow_origins=["*"],  # Permite qualquer origem (seguro para uso local/rede doméstica)
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
