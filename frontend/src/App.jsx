@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
 
 // Componentes Modulares
@@ -40,11 +40,10 @@ function App() {
     ocultarDescartados: true
   });
 
-  const fetchImoveis = () => {
+  const fetchImoveis = useCallback(() => {
     setLoading(true);
     axios.get(`${API_BASE_URL}/imoveis/recomendados`)
       .then(response => {
-        // Suporte para o novo formato {profile, results} ou formato antigo (array direto)
         const data = response.data;
         const results = data.results || (Array.isArray(data) ? data : []);
         const profile = data.profile || null;
@@ -57,24 +56,24 @@ function App() {
         console.error("Erro ao carregar imóveis:", error);
         setLoading(false);
       });
-  };
+  }, []);
 
-  const fetchNovidades = () => {
+  const fetchNovidades = useCallback(() => {
     axios.get(`${API_BASE_URL}/novidades`)
       .then(response => {
         setNovidades(response.data);
       })
       .catch(error => console.error("Erro ao carregar novidades:", error));
-  };
+  }, []);
 
   useEffect(() => {
     fetchImoveis();
     fetchNovidades();
-  }, []);
+  }, [fetchImoveis, fetchNovidades]);
 
-  const handleRecalculate = () => {
+  const handleRecalculate = useCallback(() => {
     fetchImoveis();
-  };
+  }, [fetchImoveis]);
 
   // Lógica de Filtragem e Ordenação
   const filteredImoveis = useMemo(() => {
@@ -105,12 +104,12 @@ function App() {
     return result;
   }, [imoveis, filters]);
 
-  const handleFilterChange = (e) => {
+  const handleFilterChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     setFilters(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-  };
+  }, []);
 
-  const handleInteragir = (e, imovelId, tipo) => {
+  const handleInteragir = useCallback((e, imovelId, tipo) => {
     e.stopPropagation();
     axios.post(`${API_BASE_URL}/imoveis/${imovelId}/interagir`, { tipo })
       .then(() => {
@@ -120,25 +119,25 @@ function App() {
         }
       })
       .catch(error => console.error("Erro ao interagir:", error));
-  };
+  }, [selectedImovel]);
 
-  const handleMarcarNovidadeVisto = (novidadeId) => {
+  const handleMarcarNovidadeVisto = useCallback((novidadeId) => {
     axios.post(`${API_BASE_URL}/novidades/${novidadeId}/visto`)
       .then(() => {
         setNovidades(prev => prev.filter(n => n.id !== novidadeId));
       })
       .catch(error => console.error("Erro ao marcar novidade como vista:", error));
-  };
+  }, []);
 
-  const handleLimparNovidades = () => {
+  const handleLimparNovidades = useCallback(() => {
     axios.post(`${API_BASE_URL}/novidades/limpar`)
       .then(() => {
         setNovidades([]);
       })
       .catch(error => console.error("Erro ao limpar novidades:", error));
-  };
+  }, []);
 
-  const handleOpenDetail = (id) => {
+  const handleOpenDetail = useCallback((id) => {
     setDetailLoading(true);
     setCurrentPhotoIndex(0);
     axios.get(`${API_BASE_URL}/imoveis/${id}`)
@@ -151,9 +150,9 @@ function App() {
         console.error("Erro ao carregar detalhes:", error);
         setDetailLoading(false);
       });
-  };
+  }, [imoveis]);
 
-  const scrollToCard = (id, openDetail = false) => {
+  const scrollToCard = useCallback((id, openDetail = false) => {
     setActiveCardId(id);
     if (id && cardsRef.current[id]) {
       cardsRef.current[id].scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -162,19 +161,19 @@ function App() {
     if (id && openDetail) {
       handleOpenDetail(id);
     }
-  };
+  }, [handleOpenDetail]);
 
-  const handleMapClick = () => {
+  const handleMapClick = useCallback(() => {
     setActiveCardId(null);
     setSelectedImovel(null);
-  };
+  }, []);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setFilters({ 
       precoMin: '', precoMax: '', quartos: '', banheiros: '', vagas: '', 
       bairro: '', ordenacao: 'match', mostrarApenasFavoritos: false, ocultarDescartados: true 
     });
-  };
+  }, []);
 
   return (
     <div className="flex h-screen w-full bg-slate-950 font-sans text-slate-100 uppercase-none overflow-hidden relative">

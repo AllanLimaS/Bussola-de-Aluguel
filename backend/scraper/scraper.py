@@ -6,20 +6,16 @@ import random
 import sys
 import shutil
 import time
-import base64
 import datetime
 from urllib.parse import urljoin
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 import httpx
-import argparse
 from dotenv import load_dotenv
 
 # Carregar variáveis do arquivo .env
 load_dotenv()
 
-import sys
-import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db.database import SessionLocal, Imovel, HistoricoPreco, Foto, Execucao, PHOTOS_DIR, init_db, InteracaoImovel, Novidade
@@ -39,10 +35,12 @@ USER_AGENTS = [
 ]
 
 def clean_text(text):
+    """Remove espaços em branco extras e quebras de linha."""
     if not text: return "N/A"
     return re.sub(r'\s+', ' ', text).strip()
 
 def extract_numeric(text, is_float=False):
+    """Extrai valor numérico de uma string formatada como moeda ou área."""
     if text in ["0", "N/A", "Não informado", None]:
         return 0.0 if is_float else 0
     match = re.search(r"[\d.,]+", str(text))
@@ -55,6 +53,7 @@ def extract_numeric(text, is_float=False):
     return 0.0 if is_float else 0
 
 def print_progress(current, total, msg):
+    """Imprime o progresso em formato percentual na mesma linha."""
     pct = (current / total) * 100 if total > 0 else 0
     sys.stdout.write(f"\r[{pct:5.1f}% ({current}/{total})] {msg}".ljust(100))
     sys.stdout.flush()
@@ -85,6 +84,7 @@ def geocode_address(address_str, geolocator):
         return -26.9078, -48.6619
 
 async def safe_get_text(page, selector):
+    """Obtém o texto interno de um elemento na página, retornando 'N/A' se não encontrar."""
     try:
         loc = page.locator(selector).first
         if await loc.count() > 0:
@@ -293,11 +293,13 @@ async def get_property_details(browser, url, current_idx, total_count, download_
 
         await context.close()
         return details
-    except Exception:
+    except Exception as e:
+        print_progress(current_idx, total_count, f"Skipping {listing_id} (Exception: {e})")
         await context.close()
         return None
 
 async def main():
+    """Função principal que orquestra a raspagem de dados: paginação, extração paralela e salvamento no DB."""
     start_time = time.time()
     
     # Ensure database is initialized

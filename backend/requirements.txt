@@ -7,3 +7,4 @@ geopy
 questionary
 python-dotenv
 httpx
+schedule

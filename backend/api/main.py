@@ -2,11 +2,12 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Literal
 from pydantic import BaseModel
 import datetime
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db import database as db_config
@@ -35,7 +36,7 @@ def get_db():
         db.close()
 
 class InteracaoRequest(BaseModel):
-    tipo: str  # "like", "neutral", "dislike"
+    tipo: Literal["like", "neutral", "dislike"]
 
 @app.get("/")
 def read_root():
@@ -46,46 +47,47 @@ def list_imoveis(
     status: Optional[str] = Query("ativo", description="Filtrar por status: ativo, inativo, removido, todos"),
     db: Session = Depends(get_db)
 ):
-    query = db.query(db_config.Imovel)
-    
-    if status and status != "todos":
-        query = query.filter(db_config.Imovel.status == status)
-    
-    imoveis = query.all()
-    
-    # Vamos retornar um JSON simplificado com o preço mais recente
-    results = []
-    for imovel in imoveis:
-        # Pega o último preço registrado no histórico
-        ultimo_preco = db.query(db_config.HistoricoPreco)\
-            .filter(db_config.HistoricoPreco.imovel_id == imovel.id)\
-            .order_by(db_config.HistoricoPreco.data_coleta.desc())\
-            .first()
+    try:
+        query = db.query(db_config.Imovel)
         
-        # Primeira foto como URL
-        foto_principal = None
-        if imovel.fotos:
-            foto_principal = f"/fotos/{imovel.fotos[0].foto_path}"
+        if status and status != "todos":
+            query = query.filter(db_config.Imovel.status == status)
         
-        results.append({
-            "id": imovel.id,
-            "titulo": imovel.titulo,
-            "link": imovel.link,
-            "endereco": imovel.endereco,
-            "metragem": imovel.metragem,
-            "quartos": imovel.quartos,
-            "banheiros": imovel.banheiros,
-            "vagas": imovel.vagas,
-            "preco_aluguel": ultimo_preco.preco_aluguel if ultimo_preco else None,
-            "preco_condominio": ultimo_preco.preco_condominio if ultimo_preco else None,
-            "latitude": imovel.latitude,
-            "longitude": imovel.longitude,
-            "status": imovel.status,
-            "interacao": imovel.interacao.tipo if imovel.interacao else "neutral",
-            "quantidade_fotos": len(imovel.fotos),
-            "foto_principal": foto_principal
-        })
-    return results
+        imoveis = query.all()
+        
+        results = []
+        for imovel in imoveis:
+            ultimo_preco = db.query(db_config.HistoricoPreco)\
+                .filter(db_config.HistoricoPreco.imovel_id == imovel.id)\
+                .order_by(db_config.HistoricoPreco.data_coleta.desc())\
+                .first()
+            
+            foto_principal = None
+            if imovel.fotos:
+                foto_principal = f"/fotos/{imovel.fotos[0].foto_path}"
+            
+            results.append({
+                "id": imovel.id,
+                "titulo": imovel.titulo,
+                "link": imovel.link,
+                "endereco": imovel.endereco,
+                "metragem": imovel.metragem,
+                "quartos": imovel.quartos,
+                "banheiros": imovel.banheiros,
+                "vagas": imovel.vagas,
+                "preco_aluguel": ultimo_preco.preco_aluguel if ultimo_preco else None,
+                "preco_condominio": ultimo_preco.preco_condominio if ultimo_preco else None,
+                "latitude": imovel.latitude,
+                "longitude": imovel.longitude,
+                "status": imovel.status,
+                "interacao": imovel.interacao.tipo if imovel.interacao else "neutral",
+                "quantidade_fotos": len(imovel.fotos),
+                "foto_principal": foto_principal
+            })
+        return results
+    except Exception as e:
+        print(f"Erro ao listar imoveis: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno do servidor")
 
 @app.get("/imoveis/recomendados")
 def list_recomendados(
@@ -178,8 +180,6 @@ def get_imovel_detail(imovel_id: int, db: Session = Depends(get_db)):
 @app.post("/imoveis/{imovel_id}/interagir")
 def interagir_imovel(imovel_id: int, request: InteracaoRequest, db: Session = Depends(get_db)):
     print(f"Recebendo interacao: {request.tipo} para imovel_id: {imovel_id}")
-    if request.tipo not in ["like", "neutral", "dislike"]:
-        raise HTTPException(status_code=400, detail="Tipo de interação inválido")
     
     # Verificar se o imovel existe
     imovel = db.query(db_config.Imovel).filter(db_config.Imovel.id == imovel_id).first()

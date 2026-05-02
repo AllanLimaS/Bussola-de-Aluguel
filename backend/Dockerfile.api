@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Instalar dependências do sistema necessárias para o psycopg2 ou outras libs C se houver, 
+# mas aqui é básico sqlite, então apenas update básico.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia todo o código do backend
+COPY . .
+
+# A porta que o Uvicorn vai expor
+EXPOSE 8000
+
+# Comando para rodar a API (usando importação correta do diretório /app)
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

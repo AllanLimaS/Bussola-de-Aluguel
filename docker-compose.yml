@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.api
+    container_name: bussola_api
+    volumes:
+      - ./backend/data:/app/data
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+  scraper:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.scraper
+    container_name: bussola_scraper
+    volumes:
+      - ./backend/data:/app/data
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bussola_frontend
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    depends_on:
+      - api

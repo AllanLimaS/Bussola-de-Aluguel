@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/playwright/python:v1.59.0-jammy
+
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Copia requirements primeiro para cache
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia todo o código do backend
+COPY . .
+
+# Comando padrão executa o agendador
+CMD ["python", "scraper/scheduler.py"]
