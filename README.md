@@ -9,7 +9,7 @@ Este projeto nasceu de uma necessidade pessoal real. Durante a minha busca por u
 Eu precisava de algo que fizesse o trabalho pesado por mim: um sistema que rastreasse as novidades no background, aprendesse o meu gosto e me notificasse apenas sobre os imóveis que realmente importavam, poupando meu tempo e paciência. Assim nasceu o Bússola de Aluguel.
 
 ---
-`![Tela Principal do Bússola de Aluguel](./docs/Tela_Inicial.png)`
+![Tela Principal do Bússola de Aluguel](./docs/Tela_Inicial.png)
 
 ---
 
@@ -25,7 +25,7 @@ Eu precisava de algo que fizesse o trabalho pesado por mim: um sistema que rastr
 
 ---
 
-`![Modal de Recomendação Personalizada](./docs/Recomendacao.png)`
+![Modal de Recomendação Personalizada](./docs/Recomendacao.png)
 
 ---
 
